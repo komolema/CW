@@ -52,7 +52,7 @@ object GeminiHttp {
                 list
             }
         } catch (e: Exception) {
-            DebugLog.d("Gemini listModels error: ${e.message}")
+            DebugLog.d("Gemini listModels error: ${e::class.java.name}: ${e.message}\n" + e.stackTrace.joinToString("\n") { "    at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})" })
             emptyList()
         }
     }
@@ -152,7 +152,7 @@ object GeminiHttp {
             val text = parts?.firstOrNull()?.jsonObject?.get("text")?.jsonPrimitive?.content
             GenerateResult(code, text, null)
         } catch (e: Exception) {
-            DebugLog.d("Gemini parse error: ${e.message}")
+            DebugLog.d("Gemini parse error: ${e::class.java.name}: ${e.message}\n" + e.stackTrace.joinToString("\n") { "    at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})" })
             GenerateResult(code, null, "Parse error: ${e.message}")
         } finally {
             conn.disconnect()

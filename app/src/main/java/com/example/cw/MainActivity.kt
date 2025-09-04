@@ -94,7 +94,10 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             } catch (e: Exception) {
-                                com.example.cw.util.DebugLog.d("LLMClient: exception ${'$'}{e.message} — fallback")
+                                com.example.cw.util.DebugLog.d(
+                                    "LLMClient: exception ${e::class.java.name}: ${e.message}\n" +
+                                        e.stackTrace.joinToString("\n") { "    at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})" }
+                                )
                                 null
                             }
                         }
@@ -207,8 +210,11 @@ fun SettingsAndScreen(
                                                 }
                                             } catch (e: Exception) {
                                                 val em = e.message ?: e::class.java.simpleName
-                                                testResult = "Failed: ${em}"
-                                                com.example.cw.util.DebugLog.d("TestConnection: Gemini — exception: ${em}")
+                                                testResult = "Failed: ${e::class.java.simpleName}: ${em}"
+                                                com.example.cw.util.DebugLog.d(
+                                                    "TestConnection: Gemini — exception: ${e::class.java.name}: ${em}\n" +
+                                                        e.stackTrace.joinToString("\n") { "    at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})" }
+                                                )
                                             }
                                         }
                                     }
