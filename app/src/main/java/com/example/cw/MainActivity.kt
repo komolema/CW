@@ -53,18 +53,50 @@ class MainActivity : ComponentActivity() {
                 // Base mocked processor
                 val mocked = remember { MockedPromptProcessor.fromAssets(context) }
 
-                // Simple LLM client placeholder; integrate real SDKs later
-                val client = remember {
+                // LLM client: uses GeminiHttp when provider is Gemini and API key is present; else returns null to fallback
+                val client = remember(geminiKey, geminiModel) {
                     object : LLMPromptProcessor.LLMClient {
                         override fun generate(
                             provider: LLMPromptProcessor.Provider,
                             systemOrInstruction: String,
                             user: String
                         ): String? {
-                            // Placeholder: In a real integration, use provider SDKs with API keys & model names.
-                            // Returning null triggers fallback to mocked prompts.
-                            com.example.cw.util.DebugLog.d("LLMClient: called for ${provider}, returning null (mock)")
-                            return null
+                            return try {
+                                when (provider) {
+                                    LLMPromptProcessor.Provider.Gemini -> {
+                                        if (geminiKey.isBlank()) {
+                                            com.example.cw.util.DebugLog.d("LLMClient: Gemini key missing — fallback to mocked")
+                                            null
+                                        } else {
+                                            val res = com.example.cw.prompt.GeminiHttp.generateContent(
+                                                apiKey = geminiKey.trim(),
+                                                model = geminiModel.trim(),
+                                                instruction = systemOrInstruction,
+                                                user = user,
+                                                timeoutMs = 20_000
+                                            )
+                                            if (res.httpCode in 200..299) {
+                                                val text = res.text.orEmpty()
+                                                if (text.isBlank()) {
+                                                    com.example.cw.util.DebugLog.d("LLMClient: Gemini returned empty text — fallback")
+                                                    null
+                                                } else text
+                                            } else {
+                                                com.example.cw.util.DebugLog.d("LLMClient: Gemini HTTP ${'$'}{res.httpCode} — ${res.errorMessage?.take(160) ?: ""}")
+                                                null
+                                            }
+                                        }
+                                    }
+                                    else -> {
+                                        // Other providers not implemented
+                                        com.example.cw.util.DebugLog.d("LLMClient: provider ${'$'}provider not implemented — fallback")
+                                        null
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                com.example.cw.util.DebugLog.d("LLMClient: exception ${'$'}{e.message} — fallback")
+                                null
+                            }
                         }
                     }
                 }
@@ -181,6 +213,29 @@ fun SettingsAndScreen(
                                         }
                                     }
                                 }) { Text("Test connection") }
+                                Button(onClick = {
+                                    if (geminiKey.isBlank()) {
+                                        testResult = "Failed: Missing API key for model search"
+                                        onGeminiKeyChange("")
+                                        com.example.cw.util.DebugLog.d("Models: Gemini — failed (missing key), cleared API key input")
+                                    } else {
+                                        testResult = "Searching models…"
+                                        scope.launch {
+                                            val models = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                com.example.cw.prompt.GeminiHttp.listModels(geminiKey.trim())
+                                            }
+                                            if (models.isEmpty()) {
+                                                testResult = "Failed to list models (check key/permissions)"
+                                                com.example.cw.util.DebugLog.d("Models: Gemini — list empty")
+                                            } else {
+                                                val recommended = com.example.cw.prompt.GeminiHttp.recommendFreeModel(models)
+                                                onGeminiModelChange(recommended)
+                                                testResult = "Suggested model: $recommended"
+                                                com.example.cw.util.DebugLog.d("Models: Gemini — suggested '$recommended' from ${models.size} models")
+                                            }
+                                        }
+                                    }
+                                }) { Text("Find free model") }
                             }
                         }
                     }

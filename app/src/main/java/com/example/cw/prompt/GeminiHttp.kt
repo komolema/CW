@@ -19,6 +19,66 @@ import java.net.URL
 object GeminiHttp {
     private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
+    data class ModelInfo(val name: String)
+
+    /**
+     * Lists available models for the provided API key. Returns model names; on error returns empty list.
+     */
+    fun listModels(apiKey: String, timeoutMs: Int = 10_000): List<ModelInfo> {
+        return try {
+            val urlStr = "$BASE_URL/models?key=$apiKey"
+            val url = URL(urlStr)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = timeoutMs
+                readTimeout = timeoutMs
+            }
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val response = stream?.let { s ->
+                BufferedReader(InputStreamReader(s, Charsets.UTF_8)).use { it.readText() }
+            }
+            if (code !in 200..299) {
+                DebugLog.d("Gemini listModels failed (HTTP $code): ${response?.replace("\n"," ")?.take(140) ?: ""}")
+                emptyList()
+            } else {
+                val root = Json.parseToJsonElement(response ?: "{}").jsonObject
+                val arr = root["models"]?.jsonArray
+                val list = arr?.mapNotNull { el ->
+                    val obj = runCatching { el.jsonObject }.getOrNull() ?: return@mapNotNull null
+                    val name = obj["name"]?.jsonPrimitive?.content
+                    name?.let { ModelInfo(it.substringAfter("models/")) }
+                } ?: emptyList()
+                list
+            }
+        } catch (e: Exception) {
+            DebugLog.d("Gemini listModels error: ${e.message}")
+            emptyList()
+        }
+    }
+
+    /**
+     * Picks a recommended free-tier model name from the provided list.
+     * Priority order is based on current public docs assumptions.
+     */
+    fun recommendFreeModel(models: List<ModelInfo>): String {
+        val names = models.map { it.name }
+        val priority = listOf(
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-flash"
+        )
+        for (p in priority) {
+            if (names.contains(p)) return p
+        }
+        // Fallback: any flash model
+        names.firstOrNull { it.contains("flash") }?.let { return it }
+        // Ultimate fallback: keep our default
+        return "gemini-2.0-flash"
+    }
+
     /**
      * Performs a lightweight request to validate the API key and model. Returns Pair(success, message).
      */
@@ -42,8 +102,8 @@ object GeminiHttp {
                 false to ("Failed (HTTP ${res.httpCode})" + (brief?.let { ": $it" } ?: "") + suffix)
             }
         } catch (e: Exception) {
-            DebugLog.d("Gemini testConnection error: ${e.message}")
-            false to ("Failed: ${e.message}")
+            DebugLog.d("Gemini testConnection error: ${e::class.java.name}: ${e.message}\n" + e.stackTrace.joinToString("\n") { "    at ${it.className}.${it.methodName}(${it.fileName}:${it.lineNumber})" })
+            false to ("Failed: ${e::class.java.simpleName}: ${e.message}")
         }
     }
 
@@ -53,7 +113,7 @@ object GeminiHttp {
      * Calls models/{model}:generateContent and returns the first candidate text if available.
      */
     fun generateContent(apiKey: String, model: String, instruction: String, user: String, timeoutMs: Int = 20_000): GenerateResult {
-        val urlStr = "${'$'}BASE_URL/models/${'$'}model:generateContent?key=${'$'}apiKey"
+        val urlStr = "$BASE_URL/models/$model:generateContent?key=$apiKey"
         val url = URL(urlStr)
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -92,8 +152,8 @@ object GeminiHttp {
             val text = parts?.firstOrNull()?.jsonObject?.get("text")?.jsonPrimitive?.content
             GenerateResult(code, text, null)
         } catch (e: Exception) {
-            DebugLog.d("Gemini parse error: ${'$'}{e.message}")
-            GenerateResult(code, null, "Parse error: ${'$'}{e.message}")
+            DebugLog.d("Gemini parse error: ${e.message}")
+            GenerateResult(code, null, "Parse error: ${e.message}")
         } finally {
             conn.disconnect()
         }
@@ -106,6 +166,6 @@ object GeminiHttp {
             .replace("\"", "\\\"")
             .replace("\n", "\\n")
             .replace("\r", "\\r")
-        return "\"${'$'}escaped\""
+        return "\"$escaped\""
     }
 }
