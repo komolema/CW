@@ -1,0 +1,44 @@
+[
+  {
+    "prompt": "Make background blue",
+    "uiDescription": {
+      "components": [ { "type": "background", "color": "blue" } ]
+    }
+  },
+  {
+    "prompt": "Make background purple",
+    "uiDescription": {
+      "components": [ { "type": "background", "color": "purple" } ]
+    }
+  },
+  {
+    "prompt": "Add a profile card",
+    "uiDescription": {
+      "components": [ { "type": "card", "properties": { "backgroundColor": "white", "title": "Profile" } } ]
+    }
+  },
+  {
+    "prompt": "Show title Karabo",
+    "uiDescription": {
+      "components": [ { "type": "title", "text": "Karabo" } ]
+    }
+  },
+  {
+    "prompt": "Change save button color to yellow",
+    "uiDescription": {
+      "components": [ { "type": "button", "text": "Save", "color": "yellow" } ]
+    }
+  },
+  {
+    "prompt": "Add Save button",
+    "uiDescription": {
+      "components": [ { "type": "button", "text": "Save", "action": "saveProfile" } ]
+    }
+  },
+  {
+    "prompt": "Reset",
+    "uiDescription": {
+      "components": []
+    }
+  }
+]
