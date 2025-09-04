@@ -38,12 +38,12 @@ object GeminiHttp {
                 }
                 val raw = (res.errorMessage ?: "")
                 val trimmed = raw.replace("\n", " ").take(140)
-                val suffix = if (trimmed.isNotBlank()) ": ${'$'}trimmed" else ""
-                false to ("Failed (HTTP ${'$'}{res.httpCode})" + (brief?.let { ": ${'$'}it" } ?: "") + suffix)
+                val suffix = if (trimmed.isNotBlank()) ": $trimmed" else ""
+                false to ("Failed (HTTP ${res.httpCode})" + (brief?.let { ": $it" } ?: "") + suffix)
             }
         } catch (e: Exception) {
-            DebugLog.d("Gemini testConnection error: ${'$'}{e.message}")
-            false to ("Failed: ${'$'}{e.message}")
+            DebugLog.d("Gemini testConnection error: ${e.message}")
+            false to ("Failed: ${e.message}")
         }
     }
 

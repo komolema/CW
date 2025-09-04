@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                 // Provider selection + credentials state
                 var provider by remember { mutableStateOf("MOCK") } // MOCK, GEMINI
                 var geminiKey by remember { mutableStateOf("") }
-                var geminiModel by remember { mutableStateOf("gemini-1.5-flash") } // default free-tier
+                var geminiModel by remember { mutableStateOf("gemini-2.0-flash") } // default free-tier
 
                 // Base mocked processor
                 val mocked = remember { MockedPromptProcessor.fromAssets(context) }
@@ -147,7 +147,7 @@ fun SettingsAndScreen(
                                 value = geminiModel,
                                 onValueChange = onGeminiModelChange,
                                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("geminiModel"),
-                                label = { Text("Gemini Model (default: gemini-1.5-flash)") }
+                                label = { Text("Gemini Model (default: gemini-2.0-flash)") }
                             )
                             Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                 testResult?.let { Text(it) }
@@ -167,16 +167,16 @@ fun SettingsAndScreen(
                                                 }
                                                 testResult = msg
                                                 if (ok) {
-                                                    com.example.cw.util.DebugLog.d("TestConnection: Gemini — success (model='${'$'}geminiModel')")
+                                                    com.example.cw.util.DebugLog.d("TestConnection: Gemini — success (model='${geminiModel}')")
                                                 } else {
                                                     // Clear API key on failure as requested
                                                     onGeminiKeyChange("")
-                                                    com.example.cw.util.DebugLog.d("TestConnection: Gemini — failed: ${'$'}msg; cleared API key input")
+                                                    com.example.cw.util.DebugLog.d("TestConnection: Gemini — failed: ${msg}; cleared API key input")
                                                 }
                                             } catch (e: Exception) {
                                                 val em = e.message ?: e::class.java.simpleName
-                                                testResult = "Failed: ${'$'}em"
-                                                com.example.cw.util.DebugLog.d("TestConnection: Gemini — exception: ${'$'}em")
+                                                testResult = "Failed: ${em}"
+                                                com.example.cw.util.DebugLog.d("TestConnection: Gemini — exception: ${em}")
                                             }
                                         }
                                     }

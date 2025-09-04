@@ -27,7 +27,7 @@ Prompt source:
 
 Optional LLM mode and provider switcher:
 - A simple provider switcher UI is available at the top of the screen (Mocked, Gemini).
-- Defaults: Gemini defaults to `gemini-1.5-flash` (free-tier). You can edit the model name in the UI.
+- Defaults: Gemini defaults to `gemini-2.0-flash` (free-tier). You can edit the model name in the UI.
 - Enter the API key when selecting Gemini.
 - The current app ships with a placeholder LLM client that returns null and gracefully falls back to the mocked prompts until you integrate a real provider SDK.
 - PromptTemplates.kt contains a provider-specific prompt template for Gemini to instruct an LLM to emit the same UiDescription JSON schema.
